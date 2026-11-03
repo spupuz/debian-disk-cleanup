@@ -7,6 +7,13 @@ Ultra-safe disk cleanup script for Debian-based hosts with Telegram notification
 - **NEVER commit secrets**: no `.env`, API keys, tokens, passwords.
 - Always validate scripts with `bash -n script.sh` before committing.
 
+## Push Access Control
+- **Only the registered user can push via pr-push and commit-push skills**
+- Other contributors must submit PRs for review
+- This restriction applies to all repository branches
+
+## OmniState Memory Protocol
+
 ## OmniState Memory Protocol
 Use the OmniState MCP server (`omnistate`) for persistent memory:
 1. `project_register` → `session_start` at session start
