@@ -13,8 +13,6 @@ Ultra-safe disk cleanup script for Debian-based hosts with Telegram notification
 - This restriction applies to all repository branches
 
 ## OmniState Memory Protocol
-
-## OmniState Memory Protocol
 Use the OmniState MCP server (`omnistate`) for persistent memory:
 1. `project_register` → `session_start` at session start
 2. `task_add` before significant work, `task_update` to done when finished
