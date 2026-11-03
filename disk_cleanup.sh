@@ -71,9 +71,7 @@ for config_file in "${CONFIG_FILES[@]}"; do
             value=$(echo "$value" | xargs)
             # Only set known variables
             case "$key" in
-                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|
-                CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|
-                MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|WHITELISTED_PATHS)
+                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|WHITELISTED_PATHS)
                     export "${key}"="${value}"
                     ;;
                 *)
@@ -200,7 +198,7 @@ cleanup_apt_cache() {
 
     if $DRY_RUN; then
         log_message "INFO" "[DRY RUN] Would run: apt clean"
-        send_telegram "🔍 *DRY RUN*: Would clean APT cache on *${EXEC_HOSTNAME}*
+        send_telegram "🔍 *DRY RUN*: Would clean APT cache on *${EXEC_HOSTNAME}*"
         return 0
     fi
 
@@ -234,7 +232,7 @@ cleanup_journal() {
     if [[ "${JOURNAL_VACUUM_SIZE}" -gt 0 ]]; then
         if $DRY_RUN; then
             log_message "INFO" "[DRY RUN] Would run: journalctl --vacuum-size=${JOURNAL_VACUUM_SIZE}M"
-            send_telegram "🔍 *DRY RUN*: Would vacuum journal to ${JOURNAL_VACUUM_SIZE}M on *${EXEC_HOSTNAME}*
+            send_telegram "🔍 *DRY RUN*: Would vacuum journal to ${JOURNAL_VACUUM_SIZE}M on *${EXEC_HOSTNAME}*"
             return 0
         fi
 
@@ -274,14 +272,14 @@ cleanup_docker_prune() {
 
     if $DRY_RUN; then
         log_message "INFO" "[DRY RUN] Would run: docker system prune --all"
-        send_telegram "🔍 *DRY RUN*: Would prune Docker system (images, volumes, networks) on *${EXEC_HOSTNAME}*
+        send_telegram "🔍 *DRY RUN*: Would prune Docker system (images, volumes, networks) on *${EXEC_HOSTNAME}*"
         return 0
     fi
 
     # For safety, require confirmation unless FORCE_DOCKER_PRUNE is set
     if [[ "${FORCE_MODE}" != "true" ]]; then
         local confirm_msg
-        confirm_msg="$(escape_markdown_v2 "❓ *Docker prune confirmation needed* on *${EXEC_HOSTNAME}*. Proceed with \`docker system prune --all\`? (y/N): \`\`\`\`)"
+        confirm_msg="$(escape_markdown_v2 "Docker prune confirmation needed on ${EXEC_HOSTNAME}. Proceed with docker system prune --all? (y/N)")"
         log_message "INFO" "Docker prune confirmation required"
 
         # Read from tty for confirmation - non-interactive fallback
@@ -617,7 +615,6 @@ log_message "INFO" "Hostname: ${EXEC_HOSTNAME}"
 log_message "INFO" "=========================================="
 
 # Send start message via Telegram
-local start_msg
 start_msg="$(escape_markdown_v2 "🚀 *Disk Cleanup Started* on host \`${EXEC_HOSTNAME}\`. Checking disk space and configuration...")"
 log_message "INFO" "${start_msg}"
 send_telegram "${start_msg}"
@@ -673,22 +670,19 @@ log_message "INFO" "Host: ${EXEC_HOSTNAME}"
 log_message "INFO" "Operations performed: ${#operations[@]}"
 
 # Build operations list for Telegram
-local ops_summary=""
+ops_summary=""
 for op in "${operations[@]}"; do
     # Escape each operation for Markdown
-    local escaped_op
     escaped_op=$(escape_markdown_v2 "• ${op}")
     ops_summary+="${escaped_op}"$'\n'
 done
 
 # Get final disk space
-local final_avail
 final_avail=$(df -B1 / | tail -1 | awk '{print $4}')
-local final_avail_gb=$((final_avail / 1024 / 1024 / 1024))
-local total_size_gb=$(( $(df -B1 / | tail -1 | awk '{print $2}') / 1024 / 1024 / 1024))
+final_avail_gb=$((final_avail / 1024 / 1024 / 1024))
+total_size_gb=$(( $(df -B1 / | tail -1 | awk '{print $2}') / 1024 / 1024 / 1024))
 
 # Build final summary message with Markdown formatting
-local summary_msg
 summary_msg="$(escape_markdown_v2 "==========================================")"
 summary_msg+="\n*🧹 Disk Cleanup Completed*"
 summary_msg+="\n*Host:* \`${EXEC_HOSTNAME}\`"
