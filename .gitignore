@@ -1,0 +1,31 @@
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+*.token
+
+# Cache
+.cache/
+*.cache
+
+# Logs
+*.log
+disk_cleanup.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Version cache
+.version_cache*
+.version_cache_failure*
+
+# Temporary files
+/tmp/disk_cleanup_*

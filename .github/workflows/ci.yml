@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate bash syntax
+        run: bash -n disk_cleanup.sh
+
+      - name: Shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: .
+          severity: warning
+
+      - name: Check version consistency
+        run: |
+          if [ -f "VERSION" ]; then
+            VER=$(cat VERSION | tr -d 'v' | tr -d '\n')
+            echo "VERSION file: $VER"
+          fi
+          if [ -f "version.txt" ]; then
+            VER_TXT=$(cat version.txt | tr -d '\n')
+            echo "version.txt: $VER_TXT"
+          fi
