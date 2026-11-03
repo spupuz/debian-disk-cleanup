@@ -16,6 +16,94 @@
 
 set -euo pipefail
 
+# Parse global flags early (before any other processing)
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help|-h)
+            print_help
+            exit 0
+            ;;
+
+        --version|-V)
+            print_version
+            exit 0
+            ;;
+
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+
+        --force)
+            FORCE_MODE=true
+            shift
+            ;;
+
+        --no-update)
+            AUTO_UPDATE=false
+            shift
+            ;;
+
+        *)
+            log_message "WARN" "Unknown flag: $1, ignoring"
+            shift
+            ;;
+    esac
+done
+
+# Print version and exit if --version was given
+if [[ "${VERSION_FLAG:-false}" == "true" ]]; then
+    print_version
+    exit 0
+fi
+
+print_help() {
+    echo "Usage: $SCRIPT_NAME [options]"
+    echo "Ultra-safe disk cleanup script for Debian hosts."
+    echo ""
+    echo "Options:"
+    echo "  --help, -h      Show this help message"
+    echo "  --version, -V   Show script version and exit"
+    echo "  --dry-run       Preview changes without making any modifications"
+    echo "  --force         Skip interactive confirmations (where applicable)"
+    echo "  --no-update     Disable auto-update check at startup"
+    echo ""
+    echo "Environment variables:"
+    echo "  AUTO_UPDATE     Set to 'false' to disable auto-update (default: true)"
+    echo "  FORCE_MODE      Set to 'true' to skip confirmations"
+    echo "  DRY_RUN         Set to 'true' to preview only"
+    echo "  TELEGRAM_BOT_TOKEN  Telegram bot token"
+    echo "  TELEGRAM_CHAT_ID    Telegram chat ID"
+}
+
+print_version() {
+    echo "$SCRIPT_NAME version $SCRIPT_VERSION"
+}
+
+print_help() {
+    echo "Usage: $SCRIPT_NAME [options]
+Ultra-safe disk cleanup script for Debian hosts.
+
+Options:
+  --help, -h      Show this help message
+  --version, -V   Show script version and exit
+  --dry-run       Preview changes without making any modifications
+  --force         Skip interactive confirmations (where applicable)
+  --no-update     Disable auto-update check at startup
+
+Environment variables:
+  AUTO_UPDATE     Set to 'false' to disable auto-update (default: true)
+  FORCE_MODE      Set to 'true' to skip confirmations
+  DRY_RUN         Set to 'true' to preview only
+  TELEGRAM_BOT_TOKEN  Telegram bot token
+  TELEGRAM_CHAT_ID    Telegram chat ID
+"
+}
+
+print_version() {
+    echo "$SCRIPT_NAME version $SCRIPT_VERSION"
+}
+
 # ============================================================================
 # Default Configuration Values
 # ============================================================================
