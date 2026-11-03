@@ -54,7 +54,14 @@ LOG_FILE="/var/log/disk_cleanup.log"
 # ============================================================================
 
 SCRIPT_NAME="disk_cleanup"
+SCRIPT_VERSION="1.0.0"
 EXEC_HOSTNAME=$(hostname 2>/dev/null || echo "unknown-host")
+
+# GitHub auto-update config
+GITHUB_OWNER="spupuz"
+GITHUB_REPO="debian-disk-cleanup"
+GITHUB_RELEASE_LATEST="https://github.com/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"
+GITHUB_RAW_BASE="https://raw.githubusercontent.com/$GITHUB_OWNER/$GITHUB_REPO/main"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILES=("/etc/default/disk_cleanup.conf" "$HOME/.disk_cleanup.conf")
 
@@ -183,6 +190,97 @@ check_disk_space() {
     log_message "INFO" "${ok_msg}"
     return 0
 }
+
+# ============================================================================
+# Auto-Update: check GitHub for a newer version and replace itself
+# ============================================================================
+
+auto_update() {
+    local latest_version tmp_script cache_file cache_failure_file first_line latest_tag dl_url DOWNLOAD_REF uid_cache
+    uid_cache="${EUID:-$(id -u)}"
+    local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/disk-cleanup"
+    [ -d "$cache_dir" ] || mkdir -p "$cache_dir" 2>/dev/null || cache_dir="${TMPDIR:-/tmp}"
+    cache_file="$cache_dir/.disk_cleanup_version_cache_$uid_cache"
+    cache_failure_file="$cache_dir/.disk_cleanup_version_cache_failure_$uid_cache"
+
+    if [ -f "$cache_file" ] && [ -n "$(find "$cache_file" -mmin -1440 2>/dev/null)" ]; then
+        IFS= read -r latest_version < "$cache_file"
+        if [[ "$latest_version" == *[!a-zA-Z0-9.-]* ]]; then
+            return
+        fi
+    elif [ -f "$cache_failure_file" ] && [ -n "$(find "$cache_failure_file" -mmin -60 2>/dev/null)" ]; then
+        return
+    else
+        local headers
+        headers=$(curl -sfI --connect-timeout 5 --max-time 5 --proto '=https' "$GITHUB_RELEASE_LATEST" 2>/dev/null)
+        if [[ "$headers" =~ [Ll]ocation:[[:space:]]*.*/tag/([^[:space:]$'\r\n']+) ]]; then
+            latest_tag="${BASH_REMATCH[1]}"
+            if [[ "$latest_tag" == *[!a-zA-Z0-9.-]* ]]; then return; fi
+        fi
+
+        if [ -n "$latest_tag" ]; then
+            latest_version="${latest_tag#v}"
+            DOWNLOAD_REF="$latest_tag"
+        else
+            latest_version=$(curl -sf --compressed --connect-timeout 5 --max-time 5 --proto '=https' "$GITHUB_RAW_BASE/version.txt" 2>/dev/null)
+            latest_version="${latest_version//$'\r'/}"
+            latest_version="${latest_version//$'\n'/}"
+            if [[ "$latest_version" == *[!a-zA-Z0-9.-]* ]]; then
+                latest_version=""
+            fi
+            [ -n "$latest_version" ] && DOWNLOAD_REF="main"
+        fi
+        if [ -n "$latest_version" ]; then
+            local tmp_cache
+            tmp_cache=$(mktemp "${cache_dir}/.version_cache_tmp_${uid_cache}_XXXXXX")
+            printf "%s\n" "$latest_version" > "$tmp_cache"
+            mv -f "$tmp_cache" "$cache_file"
+            rm -f "$cache_failure_file"
+        else
+            local tmp_failure
+            tmp_failure=$(mktemp "${cache_dir}/.version_cache_failure_tmp_${uid_cache}_XXXXXX")
+            if [ -n "$tmp_failure" ]; then
+                mv -f "$tmp_failure" "$cache_failure_file" 2>/dev/null || rm -f "$tmp_failure"
+            fi
+        fi
+    fi
+    [ -z "$latest_version" ] && return
+    : "${DOWNLOAD_REF:=v${latest_version}}"
+
+    if [ "$latest_version" != "$SCRIPT_VERSION" ] && [ "$(printf '%s\n' "$SCRIPT_VERSION" "$latest_version" | sort -V | tail -1)" = "$latest_version" ]; then
+        local cache_dir="${XDG_CACHE_HOME:-${HOME:+$HOME/.cache}}"
+        cache_dir="${cache_dir:-${TMPDIR:-/tmp}}"
+        [ -d "$cache_dir" ] || mkdir -p "$cache_dir" 2>/dev/null || cache_dir="/tmp"
+        tmp_script=$(mktemp "$cache_dir/disk_cleanup_${uid_cache}_XXXXXX")
+
+        if [ "$DOWNLOAD_REF" != "main" ]; then
+            dl_url="https://raw.githubusercontent.com/$GITHUB_OWNER/$GITHUB_REPO/$DOWNLOAD_REF/disk_cleanup.sh"
+        else
+            dl_url="$GITHUB_RAW_BASE/disk_cleanup.sh"
+        fi
+
+        if curl -sf --compressed --connect-timeout 5 --max-time 10 --proto '=https' -o "$tmp_script" "$dl_url" 2>/dev/null && [ -s "$tmp_script" ]; then
+            IFS= read -r first_line < "$tmp_script"
+            if [[ "$first_line" != "#!/bin/bash"* ]]; then
+                rm -f "$tmp_script"
+                return
+            fi
+            if ! diff -q "$tmp_script" "$SCRIPT_PATH" &>/dev/null; then
+                if [[ -L "$SCRIPT_PATH" ]]; then rm -f "$tmp_script"; return; fi
+                chmod +x "$tmp_script" && mv -f "$tmp_script" "$SCRIPT_PATH"
+                rm -f "$tmp_script"
+                export UPDATED_FROM_VERSION="$SCRIPT_VERSION"
+                exec "$SCRIPT_PATH" "$@"
+            fi
+        fi
+        rm -f "$tmp_script"
+    fi
+}
+
+# Run auto-update synchronously (short timeouts: ~5s max if no update, ~15s for full update)
+if [ "${AUTO_UPDATE:-true}" = "true" ] && command -v curl &>/dev/null; then
+    auto_update "$@"
+fi
 
 # ============================================================================
 # APT Cache Cleanup
