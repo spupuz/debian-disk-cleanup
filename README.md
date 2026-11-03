@@ -101,15 +101,20 @@ cp disk_cleanup_config.cfg /etc/default/disk_cleanup.conf
 
 ### Using the one-line installer (recommended)
 ```bash
+# Default installation to /usr/local/bin
 curl -sSL https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/install_disk_cleanup.sh | bash
+
+# Custom installation path
+curl -sSL https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/install_disk_cleanup.sh | bash -s -- --dir /opt/my-scripts
 ```
 
 This will:
-- Download and install the script to `/usr/local/bin/disk_cleanup`
+- Download and install the script to the specified directory (default: `/usr/local/bin`)
 - Install default configuration to `/etc/default/disk_cleanup.conf`
 - Set up systemd timer for daily automated cleanup
 - Configure log rotation
 - Print next steps for configuring Telegram
+- The auto-update mechanism works regardless of the installation path
 
 ### Manual installation
 ```bash

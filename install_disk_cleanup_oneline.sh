@@ -2,13 +2,16 @@
 # ============================================================================
 # debian-disk-cleanup - Auto-installation script
 # Usage: curl -sSL https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/install_disk_cleanup.sh | bash
+#
+# Optional: install to custom path
+#   curl -sSL https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/install_disk_cleanup.sh | bash -s -- --dir /opt/my-scripts
 # ============================================================================
 
 set -euo pipefail
 
 # Configuration
 GITHUB_REPO="spupuz/debian-disk-cleanup"
-INSTALL_DIR="/usr/local/bin"
+DEFAULT_INSTALL_DIR="/usr/local/bin"
 CONFIG_DIR="/etc/default"
 LOG_DIR="/var/log"
 SCRIPT_NAME="disk_cleanup"
@@ -30,6 +33,31 @@ log_warn() {
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dir|-d)
+            INSTALL_DIR="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--dir INSTALL_DIR] [--help]"
+            echo ""
+            echo "Options:"
+            echo "  --dir, -d INSTALL_DIR  Installation directory (default: /usr/local/bin)"
+            echo "  --help, -h             Show this help message"
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Set install directory (use default if not specified)
+INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -54,7 +82,7 @@ mkdir -p "$CONFIG_DIR"
 mkdir -p "$LOG_DIR"
 
 # Download the main script
-log_info "Downloading $SCRIPT_NAME script..."
+log_info "Downloading $SCRIPT_NAME script to $INSTALL_DIR..."
 SCRIPT_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/disk_cleanup.sh"
 if curl -sfL "$SCRIPT_URL" -o "$INSTALL_DIR/$SCRIPT_NAME" 2>/dev/null; then
     chmod +x "$INSTALL_DIR/$SCRIPT_NAME"
@@ -90,21 +118,8 @@ log_info "Installing systemd timer and service..."
 TIMER_FILE="/etc/systemd/system/disk_cleanup.timer"
 SERVICE_FILE="/etc/systemd/system/disk_cleanup.service"
 
-# Timer
-cat > "$TIMER_FILE" << 'TIMEREOF'
-[Unit]
-Description=Daily Disk Cleanup Timer
-
-[Timer]
-OnCalendar=daily
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-TIMEREOF
-
-# Service
-cat > "$SERVICE_FILE" << 'SERVICEEOF'
+# Update the ExecStart in the service file to match the install path
+sed "s|/usr/local/bin/disk_cleanup|$INSTALL_DIR/$SCRIPT_NAME|g" > "$SERVICE_FILE" << 'SERVICEEOF'
 [Unit]
 Description=Disk Cleanup Script
 Documentation=https://github.com/spupuz/debian-disk-cleanup
@@ -144,6 +159,12 @@ echo "  $INSTALL_DIR/$SCRIPT_NAME --help    Show help"
 echo "  $INSTALL_DIR/$SCRIPT_NAME --version  Show version"
 echo "  $INSTALL_DIR/$SCRIPT_NAME --dry-run  Preview cleanup"
 echo "  $INSTALL_DIR/$SCRIPT_NAME --force  Skip confirmations"
+echo ""
+echo "Auto-update mechanism:"
+echo "  The script automatically checks GitHub releases for newer versions."
+echo "  To update, re-run the install script or run with --no-update flag to skip."
+echo "  The auto-update works regardless of the installation path - it always"
+echo "  checks https://github.com/${GITHUB_REPO}/releases for the latest version."
 echo ""
 echo "Repository: https://github.com/${GITHUB_REPO}"
 echo "Docs:       https://github.com/${GITHUB_REPO}/blob/main/README.md"
