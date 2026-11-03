@@ -18,7 +18,7 @@ notifications with Markdown V2 formatting.
   - APT cache cleanup
   - Systemd journal vacuum
   - Docker system prune (with confirmation)
-  - Containerd snapshot cleanup (super-safe, checks active container references)
+  - **Super-safe containerd snapshot cleanup** - Uses `ctr` CLI (not direct `rm -rf`), checks actual container references, disabled by default
   - Apache logs cleanup
   - Orphaned data in whitelisted paths
 - **Telegram notifications** - Markdown V2 formatted updates
