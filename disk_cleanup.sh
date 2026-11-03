@@ -36,6 +36,9 @@ CLEAN_NANO=false
 # Space thresholds (in GB - cleanup only if free space below this)
 MIN_FREE_GB=5
 
+# Journal vacuum size (in MB, 0 to skip)
+JOURNAL_VACUUM_SIZE=100
+
 # Which paths to check for orphaned data (only safe, verified paths)
 WHITELISTED_PATHS=()
 
@@ -78,7 +81,7 @@ for config_file in "${CONFIG_FILES[@]}"; do
             value=$(echo "$value" | xargs)
             # Only set known variables
             case "$key" in
-                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|WHITELISTED_PATHS)
+                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|WHITELISTED_PATHS|JOURNAL_VACUUM_SIZE)
                     export "${key}"="${value}"
                     ;;
                 *)
@@ -105,7 +108,7 @@ escape_markdown_v2() {
     # Proper Markdown V2 escaping using sed
     local special_chars='_*[()~#+\-=|{}!\\>'
     local escaped
-    escaped=$(printf '%s' "$text" | sed 's/[][\(\)~#+\-=|{}\!\\>]/\\&/g')
+    escaped=$(printf '%s' "$text" | sed 's/[][\(\)~#+=|{}\!\\>-]/\\&/g')
     printf '%s' "$escaped"
 }
 
