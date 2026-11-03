@@ -543,7 +543,7 @@ cleanup_containerd_snapshots_super_safe() {
                     continue
                 fi
 
-                # Safe prune using ctr (not rm -rf!)
+                # Safe prune using ctr (not rm -rf!) - ctr handles the removal safely
                 if $DRY_RUN; then
                     log_message "INFO" "[DRY RUN] Would prune snapshot: $snap_name"
                     pruned_count=$((pruned_count + 1))
