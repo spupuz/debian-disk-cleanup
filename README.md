@@ -111,10 +111,11 @@ curl -sSL https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/inst
 This will:
 - Download and install the script to the specified directory (default: `/usr/local/bin`)
 - Install default configuration to `/etc/default/disk_cleanup.conf`
-- Set up systemd timer for daily automated cleanup
+- Set up systemd timer for daily automated cleanup at the custom path
 - Configure log rotation
 - Print next steps for configuring Telegram
-- The auto-update mechanism works regardless of the installation path
+
+**Auto-update mechanism**: The script automatically checks GitHub releases for newer versions at `https://github.com/spupuz/debian-disk-cleanup/releases/latest`. This works **regardless of the installation path** - the update mechanism always checks GitHub, not the local file system. To update, simply re-run the install script or run `disk_cleanup.sh` with `AUTO_UPDATE=true` (default).
 
 ### Manual installation
 ```bash
