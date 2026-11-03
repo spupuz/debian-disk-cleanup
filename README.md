@@ -68,6 +68,78 @@ Edit `/etc/default/disk_cleanup.conf` to:
 
 Debian 11+, Ubuntu 20.04+, and derivatives with systemd, apt, and docker/containerd.
 
+## Quick Start
+
+### Using the one-line installer (recommended)
+```bash
+curl -sSL https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/install_disk_cleanup.sh | bash
+```
+
+### Manual installation
+```bash
+# Clone the repository
+git clone https://github.com/spupuz/debian-disk-cleanup.git
+cd debian-disk-cleanup
+
+# Make the script executable
+chmod +x disk_cleanup.sh
+
+# Install configuration
+cp disk_cleanup_config.cfg /etc/default/disk_cleanup.conf
+
+# Edit configuration
+#   - Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID for notifications
+#   - Adjust MIN_FREE_GB, cleanup options, etc.
+
+# Run with defaults
+./disk_cleanup.sh
+
+# Or use the one-line installer (above)
+```
+
+## Installation
+
+### Using the one-line installer (recommended)
+```bash
+curl -sSL https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/install_disk_cleanup.sh | bash
+```
+
+This will:
+- Download and install the script to `/usr/local/bin/disk_cleanup`
+- Install default configuration to `/etc/default/disk_cleanup.conf`
+- Set up systemd timer for daily automated cleanup
+- Configure log rotation
+- Print next steps for configuring Telegram
+
+### Manual installation
+```bash
+# 1. Clone or download
+git clone https://github.com/spupuz/debian-disk-cleanup.git
+cd debian-disk-cleanup
+
+# 2. Make script executable
+chmod +x disk_cleanup.sh
+
+# 3. Install configuration
+cp disk_cleanup_config.cfg /etc/default/disk_cleanup.conf
+
+# 4. Edit configuration (required for Telegram notifications)
+#    - Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in /etc/default/disk_cleanup.conf
+#    - Adjust MIN_FREE_GB, cleanup options, etc.
+
+# 5. Set up log directory
+mkdir -p /var/log
+touch /var/log/disk_cleanup.log
+
+# 6. Enable systemd timer (optional)
+#    systemctl enable --now disk_cleanup.timer
+
+# 7. Run with defaults
+#    ./disk_cleanup.sh
+#    # Or with dry-run first:
+#    DRY_RUN=true ./disk_cleanup.sh
+```
+
 ## License
 
 MIT
