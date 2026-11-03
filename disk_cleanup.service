@@ -1,0 +1,9 @@
+[Unit]
+Description=Disk Cleanup Script
+Documentation=https://github.com/spupuz/debian-disk-cleanup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/disk_cleanup.sh
+StandardOutput=journal
+StandardError=journal

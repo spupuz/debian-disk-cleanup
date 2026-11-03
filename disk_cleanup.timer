@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily Disk Cleanup Timer
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

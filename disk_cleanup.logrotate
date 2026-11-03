@@ -1,0 +1,13 @@
+/var/log/disk_cleanup.log {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 root root
+    postrotate
+        # Reload rsyslog if running (optional)
+        systemctl reload rsyslog 2>/dev/null || true
+    endscript
+}
