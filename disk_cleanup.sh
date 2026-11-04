@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2221,SC2222
 # ============================================================================
 # Ultra-Safe Disk Cleanup Script for Debian Hosts
 # ============================================================================
@@ -71,7 +72,7 @@ CONFIG_FILES=("/etc/default/disk_cleanup.conf" "$HOME/.disk_cleanup.conf")
 
 for config_file in "${CONFIG_FILES[@]}"; do
     if [[ -f "$config_file" ]]; then
-        log_message "INFO" "Loading configuration from $config_file"
+        if type log_message &>/dev/null; then log_message "INFO" "Loading configuration from $config_file"; fi
         # Parse configuration file - extract variable assignments
         while IFS='=' read -r key value; do
             # Skip comments and empty lines
@@ -86,7 +87,7 @@ for config_file in "${CONFIG_FILES[@]}"; do
                     export "${key}"="${value}"
                     ;;
                 *)
-                    log_message "WARN" "Unknown configuration key: ${key}, skipping"
+                    if type log_message &>/dev/null; then log_message "WARN" "Unknown configuration key: ${key}, skipping"; fi
                     ;;
             esac
         done < "$config_file"
@@ -661,9 +662,18 @@ cleanup_orphaned_data() {
                     file_name=$(basename "$file")
                     # Skip common application extensions
                     case "$file_name" in
-                        *.log|*.tmp|*.cache|*.bak|*.old|.old|*.swp|*.pyc|*.class)
-                            # Safe to remove
-                            rm -f "$file" 2>/dev/null || true
+                        *.log|*.tmp|*.cache|*.bak|*.old|*.swp|*.pyc|*.class)
+                        # Skip symlinks to avoid path traversal / symlink attacks
+                        if [[ -L "$file" ]]; then
+                            log_message "INFO" "Skipping symlink (unsafe): $file"
+                            continue
+                        fi
+                        # Only remove regular files, never directories
+                        if [[ ! -f "$file" ]]; then
+                            log_message "INFO" "Skipping non-regular file: $file"
+                            continue
+                        fi
+                        rm -f "$file" 2>/dev/null || true
                             log_message "INFO" "Removed orphaned file: $file"
                             ;;
                         *)
