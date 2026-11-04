@@ -662,8 +662,17 @@ cleanup_orphaned_data() {
                     # Skip common application extensions
                     case "$file_name" in
                         *.log|*.tmp|*.cache|*.bak|*.old|.old|*.swp|*.pyc|*.class)
-                            # Safe to remove
-                            rm -f "$file" 2>/dev/null || true
+                        # Skip symlinks to avoid path traversal / symlink attacks
+                        if [[ -L "$file" ]]; then
+                            log_message "INFO" "Skipping symlink (unsafe): $file"
+                            continue
+                        fi
+                        # Only remove regular files, never directories
+                        if [[ ! -f "$file" ]]; then
+                            log_message "INFO" "Skipping non-regular file: $file"
+                            continue
+                        fi
+                        rm -f "$file" 2>/dev/null || true
                             log_message "INFO" "Removed orphaned file: $file"
                             ;;
                         *)
