@@ -690,6 +690,31 @@ cleanup_orphaned_data() {
 }
 
 # ============================================================================
+# CLI argument handling
+# ============================================================================
+case "${1:-}" in
+    --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+    --help|-h)
+        cat <<'EOF'
+Usage: disk_cleanup.sh [--help] [--version] [--dry-run]
+
+Options:
+  --help, -h       Show this help message and exit
+  --version, -v    Print the script version and exit
+  --dry-run        Preview actions without performing them
+EOF
+        exit 0
+        ;;
+    --version|-v)
+        echo "disk_cleanup.sh $SCRIPT_VERSION"
+        exit 0
+        ;;
+esac
+
+# ============================================================================
 # Main Execution
 # ============================================================================
 
