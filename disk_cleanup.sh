@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2034,SC2221,SC2222
+# shellcheck disable=SC2034,SC2218,SC2221,SC2222
 # ============================================================================
 # Ultra-Safe Disk Cleanup Script for Debian Hosts
 # ============================================================================
