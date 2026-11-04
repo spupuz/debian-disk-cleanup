@@ -118,5 +118,14 @@ gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes "$NOTES"
 # ### Full Changelog: https://github.com/spupuz/debian-disk-cleanup/compare/$LAST_TAG...$NEW_VERSION"
 ```
 
+### 12b. Close Merged PRs on GitHub
+Close any PRs that are already merged and pushed to GitHub so they are no longer open:
+```bash
+# Close each merged PR
+gh pr list --state merged --json number --jq '.[].number' | while read -r pr_number; do
+  gh pr close "$pr_number" --comment "Auto-closed after release vX.Y.Z"
+done
+```
+
 ### 13. Report
 "Released v$NEW_VERSION with N PRs merged."
