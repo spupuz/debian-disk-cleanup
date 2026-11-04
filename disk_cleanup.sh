@@ -72,7 +72,7 @@ CONFIG_FILES=("/etc/default/disk_cleanup.conf" "$HOME/.disk_cleanup.conf")
 
 for config_file in "${CONFIG_FILES[@]}"; do
     if [[ -f "$config_file" ]]; then
-        log_message "INFO" "Loading configuration from $config_file"
+        if type log_message &>/dev/null; then log_message "INFO" "Loading configuration from $config_file"; fi
         # Parse configuration file - extract variable assignments
         while IFS='=' read -r key value; do
             # Skip comments and empty lines
@@ -87,7 +87,7 @@ for config_file in "${CONFIG_FILES[@]}"; do
                     export "${key}"="${value}"
                     ;;
                 *)
-                    log_message "WARN" "Unknown configuration key: ${key}, skipping"
+                    if type log_message &>/dev/null; then log_message "WARN" "Unknown configuration key: ${key}, skipping"; fi
                     ;;
             esac
         done < "$config_file"
