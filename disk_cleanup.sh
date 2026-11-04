@@ -525,23 +525,9 @@ cleanup_containerd_snapshots_super_safe() {
             while IFS= read -r snap_name; do
                 [[ -z "$snap_name" ]] && continue
 
-                # Check if this snapshot is in use
-                if echo "$used_snapshots" | grep -q "^${snap_name}$"; then
+                # Check if this snapshot is in use (single O(1) membership check against precomputed set)
+                if printf '%s\n' "$used_snapshots" | grep -Fxq -- "$snap_name"; then
                     log_message "INFO" "Snapshot $snap_name is in use, skipping"
-                    continue
-                fi
-
-                # Also check if any container references this snapshot via ctr
-                local is_referenced=false
-                for container_id in $running_containerd_containers; do
-                    if ctr containers info "$container_id" 2>/dev/null | grep -q "$snap_name"; then
-                        is_referenced=true
-                        break
-                    fi
-                done
-
-                if [[ "$is_referenced" == "true" ]]; then
-                    log_message "INFO" "Snapshot $snap_name is referenced by a container, skipping"
                     continue
                 fi
 
