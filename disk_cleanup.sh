@@ -78,9 +78,15 @@ for config_file in "${CONFIG_FILES[@]}"; do
             # Skip comments and empty lines
             [[ "$key" =~ ^[[:space:]]*# ]] && continue
             [[ -z "$key" ]] && continue
-            # Trim whitespace
-            key=$(echo "$key" | xargs)
-            value=$(echo "$value" | xargs)
+            # Trim whitespace without invoking external commands
+            key="${key#"${key%%[![:space:]]*}"}"
+            key="${key%"${key##*[![:space:]]}"}"
+            value="${value#"${value%%[![:space:]]*}"}"
+            value="${value%"${value##*[![:space:]]}"}"
+            # Strictly validate key name to prevent injection
+            [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+            # Reject values containing control characters or newlines
+            [[ "$value" == *$'\\n'* || "$value" == *$'\\r'* ]] && continue
             # Only set known variables
             case "$key" in
                 TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|WHITELISTED_PATHS|JOURNAL_VACUUM_SIZE)
