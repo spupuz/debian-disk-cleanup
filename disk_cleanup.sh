@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2221,SC2222
 # ============================================================================
 # Ultra-Safe Disk Cleanup Script for Debian Hosts
 # ============================================================================
@@ -661,7 +662,7 @@ cleanup_orphaned_data() {
                     file_name=$(basename "$file")
                     # Skip common application extensions
                     case "$file_name" in
-                        *.log|*.tmp|*.cache|*.bak|*.old|.old|*.swp|*.pyc|*.class)
+                        *.log|*.tmp|*.cache|*.bak|*.old|*.swp|*.pyc|*.class)
                         # Skip symlinks to avoid path traversal / symlink attacks
                         if [[ -L "$file" ]]; then
                             log_message "INFO" "Skipping symlink (unsafe): $file"
