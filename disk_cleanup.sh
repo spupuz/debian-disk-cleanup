@@ -282,12 +282,17 @@ auto_update() {
         fi
 
         if curl -sf --compressed --connect-timeout 5 --max-time 10 --proto '=https' -o "$tmp_script" "$dl_url" 2>/dev/null && [ -s "$tmp_script" ]; then
-            IFS= read -r first_line < "$tmp_script"
-            if [[ "$first_line" != "#!/bin/bash"* ]]; then
-                rm -f "$tmp_script"
-                return
-            fi
-            if ! diff -q "$tmp_script" "$SCRIPT_PATH" &>/dev/null; then
+        IFS= read -r first_line < "$tmp_script"
+        if [[ "$first_line" != "#!/bin/bash"* ]]; then
+            rm -f "$tmp_script"
+            return
+        fi
+        # Integrity check: downloaded script must be valid bash syntax
+        if ! bash -n "$tmp_script" 2>/dev/null; then
+            rm -f "$tmp_script"
+            return
+        fi
+        if ! diff -q "$tmp_script" "$SCRIPT_PATH" &>/dev/null; then
                 if [[ -L "$SCRIPT_PATH" ]]; then rm -f "$tmp_script"; return; fi
                 chmod +x "$tmp_script" && mv -f "$tmp_script" "$SCRIPT_PATH"
                 rm -f "$tmp_script"
