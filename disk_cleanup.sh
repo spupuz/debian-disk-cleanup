@@ -83,8 +83,17 @@ for config_file in "${CONFIG_FILES[@]}"; do
             value=$(echo "$value" | xargs)
             # Only set known variables
             case "$key" in
-                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|WHITELISTED_PATHS|JOURNAL_VACUUM_SIZE)
+                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|JOURNAL_VACUUM_SIZE)
                     export "${key}"="${value}"
+                    ;;
+                WHITELISTED_PATHS)
+                    # Parse array literal safely (only quoted strings allowed)
+                    if [[ "$value" =~ ^\([[:space:]]*\"[^\"]*\"([[:space:]]+\"[^\"]*\")*[[:space:]]*\)$ ]]; then
+                        # shellcheck disable=SC2190
+                        eval "WHITELISTED_PATHS=${value}"
+                    else
+                        if type log_message &>/dev/null; then log_message "WARN" "Invalid WHITELISTED_PATHS format, skipping"; fi
+                    fi
                     ;;
                 *)
                     if type log_message &>/dev/null; then log_message "WARN" "Unknown configuration key: ${key}, skipping"; fi
