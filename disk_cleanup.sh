@@ -742,31 +742,37 @@ fi
 # 1. APT Cache Cleanup
 if [[ "${CLEAN_APT_CACHE}" == "true" ]]; then
     cleanup_apt_cache
+    operations+=("APT cache cleanup")
 fi
 
 # 2. Systemd Journal Cleanup
 if [[ "${CLEAN_JOURNAL}" == "true" ]]; then
     cleanup_journal
+    operations+=("Systemd journal cleanup")
 fi
 
 # 3. Docker Prune
 if [[ "${CLEAN_DOCKER_PRUNE}" == "true" ]]; then
     cleanup_docker_prune
+    operations+=("Docker prune")
 fi
 
 # 4. Containerd Snapshot Cleanup
 if [[ "${CLEAN_CONTAINERD_SNAPSHOTS}" == "true" ]]; then
     cleanup_containerd_snapshots_super_safe
+    operations+=("Containerd snapshot cleanup")
 fi
 
 # 5. Apache Logs Cleanup
 if [[ "${CLEAN_APACHE_LOGS}" == "true" ]]; then
     cleanup_apache_logs
+    operations+=("Apache logs cleanup")
 fi
 
 # 6. Orphaned Data Cleanup (whitelisted paths only)
 if [[ ${#WHITELISTED_PATHS[@]} -gt 0 ]]; then
     cleanup_orphaned_data
+    operations+=("Orphaned data cleanup")
 fi
 
 # ============================================================================
