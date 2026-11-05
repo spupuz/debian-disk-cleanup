@@ -88,7 +88,9 @@ for config_file in "${CONFIG_FILES[@]}"; do
                     ;;
                 WHITELISTED_PATHS)
                     # Parse array literal safely (only quoted strings allowed)
-                    if [[ "$value" =~ ^\([[:space:]]*\"[^\"]*\"([[:space:]]+\"[^\"]*\")*[[:space:]]*\)$ ]]; then
+                    if [[ "$value" == "()" ]]; then
+                        WHITELISTED_PATHS=()
+                    elif [[ "$value" =~ ^\([[:space:]]*\"[^\"]*\"([[:space:]]+\"[^\"]*\")*[[:space:]]*\)$ ]]; then
                         # shellcheck disable=SC2190
                         eval "WHITELISTED_PATHS=${value}"
                     else
