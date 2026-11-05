@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2034,SC2221,SC2222
+# shellcheck disable=SC2034,SC2218,SC2221,SC2222
 # ============================================================================
 # Ultra-Safe Disk Cleanup Script for Debian Hosts
 # ============================================================================
@@ -674,6 +674,31 @@ cleanup_orphaned_data() {
     send_telegram "🧹 *Orphaned data cleanup* completed on *${EXEC_HOSTNAME}*."
     return 0
 }
+
+# ============================================================================
+# CLI argument handling
+# ============================================================================
+case "${1:-}" in
+    --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+    --help|-h)
+        cat <<'EOF'
+Usage: disk_cleanup.sh [--help] [--version] [--dry-run]
+
+Options:
+  --help, -h       Show this help message and exit
+  --version, -v    Print the script version and exit
+  --dry-run        Preview actions without performing them
+EOF
+        exit 0
+        ;;
+    --version|-v)
+        echo "disk_cleanup.sh $SCRIPT_VERSION"
+        exit 0
+        ;;
+esac
 
 # ============================================================================
 # Main Execution
