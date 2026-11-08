@@ -50,9 +50,12 @@ chmod +x "$INSTALL_SCRIPT"
 # Install configuration file
 CONFIG_FILE="$CONFIG_DIR/disk_cleanup.conf"
 if [[ ! -f "$CONFIG_FILE" ]]; then
-    cp "$INSTALL_DIR/disk_cleanup_config.cfg" "$CONFIG_FILE" 2>/dev/null || true
-    echo "Created default config at $CONFIG_FILE"
-    echo "Please edit $CONFIG_FILE to set your Telegram credentials and preferences"
+    if curl -sfL "https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/disk_cleanup_config.cfg" -o "$CONFIG_FILE" 2>/dev/null; then
+        echo "Created default config at $CONFIG_FILE"
+        echo "Please edit $CONFIG_FILE to set your Telegram credentials and preferences"
+    else
+        echo "WARNING: Failed to download default config to $CONFIG_FILE"
+    fi
 else
     echo "Config already exists at $CONFIG_FILE, skipping"
 fi
