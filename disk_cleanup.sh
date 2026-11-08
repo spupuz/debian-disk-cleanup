@@ -605,7 +605,7 @@ cleanup_apache_logs() {
                 log_message "INFO" "[DRY RUN] Would clean logs in: $log_dir"
             else
                 # Rotate and clean old logs, keep recent ones
-                find "$log_dir" -name "*.1" -o -name "*.gz" -o -name "*.old" 2>/dev/null | while read -r old_log; do
+                while read -r old_log; do
                     local log_name
                     log_name=$(basename "$old_log")
                     # Only remove compressed/rotated old logs older than 30 days
@@ -621,7 +621,7 @@ cleanup_apache_logs() {
                             fi
                         fi
                     fi
-                done
+                done < <(find "$log_dir" -name "*.1" -o -name "*.gz" -o -name "*.old" 2>/dev/null)
                 send_telegram "📄 *Apache logs cleanup* on *${EXEC_HOSTNAME}*. Check logs for details."
             fi
         fi
@@ -661,7 +661,7 @@ cleanup_orphaned_data() {
 
         if [[ -n "$large_files" ]]; then
             log_message "INFO" "Found potentially orphanable files in $path"
-            echo "$large_files" | while read -r file; do
+            while read -r file; do
                 local days_since_access
                 days_since_access=$(find "$file" -atime +30 2>/dev/null | wc -l || echo "0")
                 if [[ $days_since_access -gt 0 ]]; then
@@ -689,7 +689,7 @@ cleanup_orphaned_data() {
                             ;;
                     esac
                 fi
-            done
+            done <<< "$large_files"
         fi
     done
 
