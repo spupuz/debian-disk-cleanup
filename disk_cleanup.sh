@@ -332,6 +332,7 @@ cleanup_apt_cache() {
         apt_msg="$(escape_markdown_v2 "✅ *APT cache cleaned* successfully on *${EXEC_HOSTNAME}*")"
         log_message "INFO" "APT cache cleaned"
         send_telegram "${apt_msg}"
+        operations+=("APT cache cleaned")
         return 0
     else
         local apt_err
@@ -366,6 +367,7 @@ cleanup_journal() {
             journal_msg="$(escape_markdown_v2 "📓 *Journal compressed to ${JOURNAL_VACUUM_SIZE}M* on *${EXEC_HOSTNAME}*")"
             log_message "INFO" "Journal compressed to ${JOURNAL_VACUUM_SIZE}M"
             send_telegram "${journal_msg}"
+            operations+=("Journal compressed to ${JOURNAL_VACUUM_SIZE}M")
             return 0
         else
             local journal_err
@@ -419,6 +421,7 @@ cleanup_docker_prune() {
                 docker_ok="$(escape_markdown_v2 "✅ *Docker prune completed* successfully on *${EXEC_HOSTNAME}*")"
                 log_message "INFO" "Docker prune completed"
                 send_telegram "${docker_ok}"
+                operations+=("Docker prune completed")
                 return 0
             else
                 local docker_err
@@ -441,6 +444,7 @@ cleanup_docker_prune() {
             docker_forced_ok="$(escape_markdown_v2 "✅ *Forced Docker prune completed* on *${EXEC_HOSTNAME}*")"
             log_message "INFO" "Forced Docker prune completed"
             send_telegram "${docker_forced_ok}"
+            operations+=("Forced Docker prune completed")
             return 0
         else
             local docker_forced_err
@@ -572,6 +576,9 @@ cleanup_containerd_snapshots_super_safe() {
                 snapshot_count_after=$(ls -la /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/ 2>/dev/null | wc -l || echo "0")
                 log_message "INFO" "Snapshots after: ${snapshot_count_after}"
                 send_telegram "✅ *Cleanup complete on *${EXEC_HOSTNAME}*. Pruned: ${pruned_count} snapshots. Count: ${snapshot_count_before} → ${snapshot_count_after}"
+                if [[ $pruned_count -gt 0 ]]; then
+                    operations+=("Pruned ${pruned_count} containerd snapshots")
+                fi
             fi
         fi
     fi
@@ -618,6 +625,7 @@ cleanup_apache_logs() {
                             else
                                 rm -f "$old_log" 2>/dev/null || true
                                 log_message "INFO" "Removed old log: $old_log"
+                                operations+=("Removed old Apache log: $old_log")
                             fi
                         fi
                     fi
@@ -683,6 +691,7 @@ cleanup_orphaned_data() {
                         fi
                         rm -f "$file" 2>/dev/null || true
                             log_message "INFO" "Removed orphaned file: $file"
+                            operations+=("Removed orphaned file: $file")
                             ;;
                         *)
                             log_message "INFO" "Skipping file (possible application data): $file"
