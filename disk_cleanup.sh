@@ -58,7 +58,7 @@ LOG_FILE="/var/log/disk_cleanup.log"
 # ============================================================================
 
 SCRIPT_NAME="disk_cleanup"
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.0.4"
 EXEC_HOSTNAME=$(hostname 2>/dev/null || echo "unknown-host")
 
 # GitHub auto-update config
@@ -491,7 +491,7 @@ cleanup_containerd_snapshots_super_safe() {
     # 3. Count snapshots before
     if [[ "$safe_to_prune" == "true" ]]; then
         if [[ -d "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots" ]]; then
-            snapshot_count_before=$(ls -la /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/ 2>/dev/null | wc -l || echo "0")
+            snapshot_count_before=$(find /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/ -mindepth 1 2>/dev/null | wc -l || echo "0")
             log_message "INFO" "Snapshots before: ${snapshot_count_before}"
             send_telegram "📊 *Snapshot count before cleanup: ${snapshot_count_before}* on *${EXEC_HOSTNAME}*"
         else
@@ -573,7 +573,7 @@ cleanup_containerd_snapshots_super_safe() {
 
             # Count remaining snapshots
             if [[ -d "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots" ]]; then
-                snapshot_count_after=$(ls -la /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/ 2>/dev/null | wc -l || echo "0")
+                snapshot_count_after=$(find /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/ -mindepth 1 2>/dev/null | wc -l || echo "0")
                 log_message "INFO" "Snapshots after: ${snapshot_count_after}"
                 send_telegram "✅ *Cleanup complete on *${EXEC_HOSTNAME}*. Pruned: ${pruned_count} snapshots. Count: ${snapshot_count_before} → ${snapshot_count_after}"
                 if [[ $pruned_count -gt 0 ]]; then
