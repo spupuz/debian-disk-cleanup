@@ -234,7 +234,7 @@ auto_update() {
         return
     else
         local headers
-        headers=$(curl -sfI --connect-timeout 5 --max-time 5 --proto '=https' "$GITHUB_RELEASE_LATEST" 2>/dev/null)
+        headers=$(curl -sfI --connect-timeout 5 --max-time 5 --proto '=https' "$GITHUB_RELEASE_LATEST" 2>/dev/null) || headers=""
         if [[ "$headers" =~ [Ll]ocation:[[:space:]]*.*/tag/([^[:space:]$'\r\n']+) ]]; then
             latest_tag="${BASH_REMATCH[1]}"
             if [[ "$latest_tag" == *[!a-zA-Z0-9.-]* ]]; then return; fi
@@ -244,7 +244,7 @@ auto_update() {
             latest_version="${latest_tag#v}"
             DOWNLOAD_REF="$latest_tag"
         else
-            latest_version=$(curl -sf --compressed --connect-timeout 5 --max-time 5 --proto '=https' "$GITHUB_RAW_BASE/version.txt" 2>/dev/null)
+            latest_version=$(curl -sf --compressed --connect-timeout 5 --max-time 5 --proto '=https' "$GITHUB_RAW_BASE/version.txt" 2>/dev/null) || latest_version=""
             latest_version="${latest_version//$'\r'/}"
             latest_version="${latest_version//$'\n'/}"
             if [[ "$latest_version" == *[!a-zA-Z0-9.-]* ]]; then
