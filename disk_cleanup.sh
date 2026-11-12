@@ -49,6 +49,15 @@ FORCE_MODE=false
 # Dry run mode (show what would be done without doing it)
 DRY_RUN=false
 
+
+# Performance optimization: early exit if disk is above threshold
+if $(df -B1 / | tail -1 | awk "{print \$4}") -lt $((MIN_FREE_GB * 1024 * 1024 * 1024)); then
+    log_message "INFO" "Disk space below threshold ($MIN_FREE_GB GB), proceeding with cleanup"
+else
+    log_message "INFO" "Disk space above threshold ($MIN_FREE_GB GB), skipping cleanup"
+    exit 0
+fi
+
 # Logging
 LOG_TO_FILE=true
 LOG_FILE="/var/log/disk_cleanup.log"
