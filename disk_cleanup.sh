@@ -50,14 +50,6 @@ FORCE_MODE=false
 DRY_RUN=false
 
 
-# Performance optimization: early exit if disk is above threshold
-if $(df -B1 / | tail -1 | awk "{print \$4}") -lt $((MIN_FREE_GB * 1024 * 1024 * 1024)); then
-    log_message "INFO" "Disk space below threshold ($MIN_FREE_GB GB), proceeding with cleanup"
-else
-    log_message "INFO" "Disk space above threshold ($MIN_FREE_GB GB), skipping cleanup"
-    exit 0
-fi
-
 # Logging
 LOG_TO_FILE=true
 LOG_FILE="/var/log/disk_cleanup.log"
@@ -755,6 +747,15 @@ log_message "INFO" "=========================================="
 log_message "INFO" "Starting Disk Cleanup Script for Debian Hosts"
 log_message "INFO" "Hostname: ${EXEC_HOSTNAME}"
 log_message "INFO" "=========================================="
+
+# Performance optimization: skip cleanup entirely when free space is above
+# the configured threshold (cleanup only runs when free space < MIN_FREE_GB).
+if [ "$(df -B1 / | tail -1 | awk '{print $4}')" -lt $((MIN_FREE_GB * 1024 * 1024 * 1024)) ]; then
+    log_message "INFO" "Disk space below threshold ($MIN_FREE_GB GB), proceeding with cleanup"
+else
+    log_message "INFO" "Disk space above threshold ($MIN_FREE_GB GB), skipping cleanup"
+    exit 0
+fi
 
 # Send start message via Telegram
 start_msg="$(escape_markdown_v2 "🚀 *Disk Cleanup Started* on host \`${EXEC_HOSTNAME}\`. Checking disk space and configuration...")"
