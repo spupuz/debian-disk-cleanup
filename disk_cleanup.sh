@@ -305,6 +305,43 @@ auto_update() {
     fi
 }
 
+# ============================================================================
+# CLI argument handling
+# ============================================================================
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --help|-h)
+            cat <<'EOF'
+Usage: disk_cleanup.sh [--help] [--version] [--dry-run]
+
+Options:
+  --help, -h       Show this help message and exit
+  --version, -v    Print the script version and exit
+  --dry-run        Preview actions without performing them
+EOF
+            exit 0
+            ;;
+        --version|-v)
+            echo "disk_cleanup.sh $SCRIPT_VERSION"
+            exit 0
+            ;;
+        --*)
+            echo "Error: unknown option: $1" >&2
+            echo "Use --help for usage." >&2
+            exit 2
+            ;;
+        *)
+            echo "Error: unexpected argument: $1" >&2
+            echo "Use --help for usage." >&2
+            exit 2
+            ;;
+    esac
+done
+
 # Run auto-update synchronously (short timeouts: ~5s max if no update, ~15s for full update)
 if [ "${AUTO_UPDATE:-true}" = "true" ] && command -v curl &>/dev/null; then
     auto_update "$@"
@@ -706,31 +743,6 @@ cleanup_orphaned_data() {
     send_telegram "🧹 *Orphaned data cleanup* completed on *${EXEC_HOSTNAME}*."
     return 0
 }
-
-# ============================================================================
-# CLI argument handling
-# ============================================================================
-case "${1:-}" in
-    --dry-run)
-        DRY_RUN=true
-        shift
-        ;;
-    --help|-h)
-        cat <<'EOF'
-Usage: disk_cleanup.sh [--help] [--version] [--dry-run]
-
-Options:
-  --help, -h       Show this help message and exit
-  --version, -v    Print the script version and exit
-  --dry-run        Preview actions without performing them
-EOF
-        exit 0
-        ;;
-    --version|-v)
-        echo "disk_cleanup.sh $SCRIPT_VERSION"
-        exit 0
-        ;;
-esac
 
 # ============================================================================
 # Main Execution
