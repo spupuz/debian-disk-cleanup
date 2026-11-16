@@ -99,7 +99,7 @@ for config_file in "${CONFIG_FILES[@]}"; do
                         WHITELISTED_PATHS=()
                     elif [[ "$value" =~ ^\([[:space:]]*\"[^\"]*\"([[:space:]]+\"[^\"]*\")*[[:space:]]*\)$ ]]; then
                         WHITELISTED_PATHS=()
-                        local _wp_rest="$value"
+                        _wp_rest="$value"
                         while [[ $_wp_rest =~ \"([^\"]*)\"(.*) ]]; do
                             WHITELISTED_PATHS+=("${BASH_REMATCH[1]}")
                             _wp_rest="${BASH_REMATCH[2]}"
