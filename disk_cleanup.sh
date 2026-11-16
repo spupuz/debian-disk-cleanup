@@ -326,6 +326,14 @@ Options:
   --help, -h       Show this help message and exit
   --version, -v    Print the script version and exit
   --dry-run        Preview actions without performing them
+
+Environment:
+  DRY_RUN=true     Same as --dry-run
+  FORCE_MODE=true  Skip interactive Docker prune confirmation
+  AUTO_UPDATE=false  Disable GitHub self-update check
+
+Configuration:
+  /etc/default/disk_cleanup.conf or ~/.disk_cleanup.conf
 EOF
             exit 0
             ;;
@@ -445,16 +453,16 @@ cleanup_docker_prune() {
         return 0
     fi
 
-    # For safety, require confirmation unless FORCE_DOCKER_PRUNE is set
+    # For safety, require confirmation unless FORCE_MODE=true
     if [[ "${FORCE_MODE}" != "true" ]]; then
         local confirm_msg
         confirm_msg="$(escape_markdown_v2 "Docker prune confirmation needed on ${EXEC_HOSTNAME}. Proceed with docker system prune --all? (y/N)")"
-        log_message "INFO" "Docker prune confirmation required"
+        log_message "INFO" "Docker prune confirmation required (use FORCE_MODE=true to skip)"
 
         # Read from tty for confirmation - non-interactive fallback
         local response="N"
         if [[ -t 0 ]]; then
-            response=$(read -r response < /dev/tty 2>/dev/null || echo "N")
+            read -r response < /dev/tty 2>/dev/null || response="N"
         fi
 
         if [[ "$response" =~ ^[Yy]$ ]]; then
