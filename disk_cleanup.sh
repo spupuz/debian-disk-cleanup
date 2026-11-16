@@ -522,14 +522,15 @@ cleanup_containerd_snapshots_super_safe() {
             running_containerd_containers=$(ctr containers list -q 2>/dev/null || echo "")
 
             # Get list of snapshot IDs that are actively used by containers
-            local used_snapshots=""
+            # ⚡ Bolt: associative array for O(1) membership checks without spawning grep per snapshot
+            local -A used_snapshot_map=()
             if [[ -n "$running_containerd_containers" ]]; then
                 for container_id in $running_containerd_containers; do
                     # Get the snapshot used by this container
                     local container_snapshot
                     container_snapshot=$(ctr containers info "$container_id" 2>/dev/null | grep -i "snapshot" | head -1 | awk '{print $NF}' || echo "")
                     if [[ -n "$container_snapshot" ]]; then
-                        used_snapshots+="$container_snapshot"$'\n'
+                        used_snapshot_map["$container_snapshot"]=1
                     fi
                 done
             fi
@@ -542,7 +543,7 @@ cleanup_containerd_snapshots_super_safe() {
                     local docker_snapshot
                     docker_snapshot=$(docker inspect --format='{{.GraphDriver.Data.MergedDir}}' "$container_id" 2>/dev/null | grep -oE '[a-f0-9]{64}' | head -1 || echo "")
                     if [[ -n "$docker_snapshot" ]]; then
-                        used_snapshots+="$docker_snapshot"$'\n'
+                        used_snapshot_map["$docker_snapshot"]=1
                     fi
                 done
             fi
@@ -552,8 +553,8 @@ cleanup_containerd_snapshots_super_safe() {
             while IFS= read -r snap_name; do
                 [[ -z "$snap_name" ]] && continue
 
-                # Check if this snapshot is in use (single O(1) membership check against precomputed set)
-                if printf '%s\n' "$used_snapshots" | grep -Fxq -- "$snap_name"; then
+                # Check if this snapshot is in use (O(1) map lookup, avoids grep fork per snapshot)
+                if [[ -n ${used_snapshot_map[$snap_name]+_} ]]; then
                     log_message "INFO" "Snapshot $snap_name is in use, skipping"
                     continue
                 fi
