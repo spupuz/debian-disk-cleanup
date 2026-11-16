@@ -94,12 +94,16 @@ for config_file in "${CONFIG_FILES[@]}"; do
                     export "${key}"="${value}"
                     ;;
                 WHITELISTED_PATHS)
-                    # Parse array literal safely (only quoted strings allowed)
+                    # Parse array literal safely without eval (only quoted strings allowed)
                     if [[ "$value" == "()" ]]; then
                         WHITELISTED_PATHS=()
                     elif [[ "$value" =~ ^\([[:space:]]*\"[^\"]*\"([[:space:]]+\"[^\"]*\")*[[:space:]]*\)$ ]]; then
-                        # shellcheck disable=SC2190
-                        eval "WHITELISTED_PATHS=${value}"
+                        WHITELISTED_PATHS=()
+                        local _wp_rest="$value"
+                        while [[ $_wp_rest =~ \"([^\"]*)\"(.*) ]]; do
+                            WHITELISTED_PATHS+=("${BASH_REMATCH[1]}")
+                            _wp_rest="${BASH_REMATCH[2]}"
+                        done
                     else
                         if type log_message &>/dev/null; then log_message "WARN" "Invalid WHITELISTED_PATHS format, skipping"; fi
                     fi
