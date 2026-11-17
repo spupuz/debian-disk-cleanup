@@ -574,27 +574,27 @@ cleanup_containerd_snapshots_super_safe() {
             # ⚡ Bolt: associative array for O(1) membership checks without spawning grep per snapshot
             local -A used_snapshot_map=()
             if [[ -n "$running_containerd_containers" ]]; then
-                for container_id in $running_containerd_containers; do
-                    # Get the snapshot used by this container
-                    local container_snapshot
-                    container_snapshot=$(ctr containers info "$container_id" 2>/dev/null | grep -i "snapshot" | head -1 | awk '{print $NF}' || echo "")
-                    if [[ -n "$container_snapshot" ]]; then
-                        used_snapshot_map["$container_snapshot"]=1
-                    fi
-                done
+                # Batched: parse SNAPSHOT column from a single ctr containers list call
+                # instead of spawning ctr containers info per container
+                local container_snapshots
+                container_snapshots=$(ctr containers list 2>/dev/null | awk 'NR>1 {print $NF}' || echo "")
+                while IFS= read -r container_snapshot; do
+                    [[ -z "$container_snapshot" ]] && continue
+                    used_snapshot_map["$container_snapshot"]=1
+                done <<< "$container_snapshots"
             fi
 
             # Also check docker containers if docker is available
             local running_docker_containers
             running_docker_containers=$(docker ps -q 2>/dev/null || echo "")
             if [[ -n "$running_docker_containers" ]]; then
-                for container_id in $running_docker_containers; do
-                    local docker_snapshot
-                    docker_snapshot=$(docker inspect --format='{{.GraphDriver.Data.MergedDir}}' "$container_id" 2>/dev/null | grep -oE '[a-f0-9]{64}' | head -1 || echo "")
-                    if [[ -n "$docker_snapshot" ]]; then
-                        used_snapshot_map["$docker_snapshot"]=1
-                    fi
-                done
+                # Batched: docker inspect accepts multiple container IDs in one call
+                local docker_snapshots
+                docker_snapshots=$(docker inspect --format='{{.GraphDriver.Data.MergedDir}}' $running_docker_containers 2>/dev/null | grep -oE '[a-f0-9]{64}' || echo "")
+                while IFS= read -r docker_snapshot; do
+                    [[ -z "$docker_snapshot" ]] && continue
+                    used_snapshot_map["$docker_snapshot"]=1
+                done <<< "$docker_snapshots"
             fi
 
             # Prune only snapshots not in the used list
