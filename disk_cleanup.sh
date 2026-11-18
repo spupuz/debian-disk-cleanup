@@ -405,19 +405,26 @@ cleanup_journal() {
 
     log_message "INFO" "Cleaning systemd journal..."
 
-    if [[ "${JOURNAL_VACUUM_SIZE}" -gt 0 ]]; then
+    # Validate JOURNAL_VACUUM_SIZE (config-sourced; could be non-numeric)
+    local vacuum_size="${JOURNAL_VACUUM_SIZE}"
+    if ! [[ "$vacuum_size" =~ ^[0-9]+$ ]]; then
+        log_message "WARN" "Invalid JOURNAL_VACUUM_SIZE='${vacuum_size}', skipping journal cleanup"
+        return 1
+    fi
+
+    if [[ "$vacuum_size" -gt 0 ]]; then
         if $DRY_RUN; then
-            log_message "INFO" "[DRY RUN] Would run: journalctl --vacuum-size=${JOURNAL_VACUUM_SIZE}M"
-            send_telegram "🔍 *DRY RUN*: Would vacuum journal to ${JOURNAL_VACUUM_SIZE}M on *${EXEC_HOSTNAME}*"
+            log_message "INFO" "[DRY RUN] Would run: journalctl --vacuum-size=${vacuum_size}M"
+            send_telegram "🔍 *DRY RUN*: Would vacuum journal to ${vacuum_size}M on *${EXEC_HOSTNAME}*"
             return 0
         fi
 
-        if journalctl --vacuum-size="${JOURNAL_VACUUM_SIZE}M" 2>&1; then
+        if journalctl --vacuum-size="${vacuum_size}M" 2>&1; then
             local journal_msg
-            journal_msg="$(escape_markdown_v2 "📓 *Journal compressed to ${JOURNAL_VACUUM_SIZE}M* on *${EXEC_HOSTNAME}*")"
-            log_message "INFO" "Journal compressed to ${JOURNAL_VACUUM_SIZE}M"
+            journal_msg="$(escape_markdown_v2 "📓 *Journal compressed to ${vacuum_size}M* on *${EXEC_HOSTNAME}*")"
+            log_message "INFO" "Journal compressed to ${vacuum_size}M"
             send_telegram "${journal_msg}"
-            operations+=("Journal compressed to ${JOURNAL_VACUUM_SIZE}M")
+            operations+=("Journal compressed to ${vacuum_size}M")
             return 0
         else
             local journal_err
@@ -773,6 +780,12 @@ log_message "INFO" "Starting Disk Cleanup Script for Debian Hosts"
 log_message "INFO" "Hostname: ${EXEC_HOSTNAME}"
 log_message "INFO" "=========================================="
 
+# Validate MIN_FREE_GB (config-sourced; must be a non-negative integer)
+if ! [[ "${MIN_FREE_GB}" =~ ^[0-9]+$ ]]; then
+    log_message "WARN" "Invalid MIN_FREE_GB='${MIN_FREE_GB}', falling back to default (5)"
+    MIN_FREE_GB=5
+fi
+
 # Performance optimization: skip cleanup entirely when free space is above
 # the configured threshold (cleanup only runs when free space < MIN_FREE_GB).
 if [ "$(df -B1 / | tail -1 | awk '{print $4}')" -lt $((MIN_FREE_GB * 1024 * 1024 * 1024)) ]; then
@@ -799,40 +812,38 @@ fi
 # Cleanup Operations
 # ============================================================================
 
+# Note: Each cleanup_* function already appends its own specific entry to the
+# operations array on success. We do NOT append generic entries here, otherwise
+# every run would falsely report operations that were skipped or failed.
+
 # 1. APT Cache Cleanup
 if [[ "${CLEAN_APT_CACHE}" == "true" ]]; then
-    cleanup_apt_cache
-    operations+=("APT cache cleanup")
+    cleanup_apt_cache || true
 fi
 
 # 2. Systemd Journal Cleanup
 if [[ "${CLEAN_JOURNAL}" == "true" ]]; then
-    cleanup_journal
-    operations+=("Systemd journal cleanup")
+    cleanup_journal || true
 fi
 
 # 3. Docker Prune
 if [[ "${CLEAN_DOCKER_PRUNE}" == "true" ]]; then
-    cleanup_docker_prune
-    operations+=("Docker prune")
+    cleanup_docker_prune || true
 fi
 
 # 4. Containerd Snapshot Cleanup
 if [[ "${CLEAN_CONTAINERD_SNAPSHOTS}" == "true" ]]; then
-    cleanup_containerd_snapshots_super_safe
-    operations+=("Containerd snapshot cleanup")
+    cleanup_containerd_snapshots_super_safe || true
 fi
 
 # 5. Apache Logs Cleanup
 if [[ "${CLEAN_APACHE_LOGS}" == "true" ]]; then
-    cleanup_apache_logs
-    operations+=("Apache logs cleanup")
+    cleanup_apache_logs || true
 fi
 
 # 6. Orphaned Data Cleanup (whitelisted paths only)
 if [[ ${#WHITELISTED_PATHS[@]} -gt 0 ]]; then
-    cleanup_orphaned_data
-    operations+=("Orphaned data cleanup")
+    cleanup_orphaned_data || true
 fi
 
 # ============================================================================
