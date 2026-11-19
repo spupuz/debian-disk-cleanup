@@ -184,13 +184,9 @@ send_telegram() {
 
 check_disk_space() {
     local df_output
-    df_output=$(df -B1 / | tail -1)
+    # Parse df output once (single awk invocation) instead of four pipelines
     local used avail size pct
-
-    used=$(echo "$df_output" | awk '{print $3}')
-    avail=$(echo "$df_output" | awk '{print $4}')
-    size=$(echo "$df_output" | awk '{print $2}')
-    pct=$(echo "$df_output" | awk '{print $5}' | tr -d '%')
+    read -r size used avail pct <<< "$(df -B1 / | awk 'NR==2 {print $2, $3, $4, $5}' | tr -d '%')"
 
     # Convert to GB
     local used_gb avail_gb size_gb
