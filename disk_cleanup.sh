@@ -116,9 +116,11 @@ for config_file in "${CONFIG_FILES[@]}"; do
     fi
 done
 
-# Set Telegram enabled state
+# Set Telegram enabled state (validate formats to prevent URL/header injection)
 if [[ -n "${TELEGRAM_BOT_TOKEN}" ]] && [[ "${TELEGRAM_BOT_TOKEN}" != "YOUR_TELEGRAM_BOT_TOKEN_HERE" ]] && \
-   [[ -n "${TELEGRAM_CHAT_ID}" ]] && [[ "${TELEGRAM_CHAT_ID}" != "YOUR_TELEGRAM_CHAT_ID_HERE" ]]; then
+   [[ "${TELEGRAM_BOT_TOKEN}" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]] && \
+   [[ -n "${TELEGRAM_CHAT_ID}" ]] && [[ "${TELEGRAM_CHAT_ID}" != "YOUR_TELEGRAM_CHAT_ID_HERE" ]] && \
+   [[ "${TELEGRAM_CHAT_ID}" =~ ^-?[0-9]+$ ]]; then
     TELEGRAM_ENABLED=true
 fi
 
