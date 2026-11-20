@@ -671,23 +671,16 @@ cleanup_apache_logs() {
             else
                 # Rotate and clean old logs, keep recent ones
                 while read -r old_log; do
-                    local log_name
-                    log_name=$(basename "$old_log")
+                    [[ -z "$old_log" ]] && continue
                     # Only remove compressed/rotated old logs older than 30 days
-                    if [[ -n "$old_log" ]]; then
-                        local days_old
-                        days_old=$(find "$old_log" -mtime +30 2>/dev/null | wc -l)
-                        if [[ $days_old -gt 0 ]]; then
-                            if $DRY_RUN; then
-                                log_message "INFO" "[DRY RUN] Would remove: $old_log"
-                            else
-                                rm -f "$old_log" 2>/dev/null || true
-                                log_message "INFO" "Removed old log: $old_log"
-                                operations+=("Removed old Apache log: $old_log")
-                            fi
-                        fi
+                    if $DRY_RUN; then
+                        log_message "INFO" "[DRY RUN] Would remove: $old_log"
+                    else
+                        rm -f "$old_log" 2>/dev/null || true
+                        log_message "INFO" "Removed old log: $old_log"
+                        operations+=("Removed old Apache log: $old_log")
                     fi
-                done < <(find "$log_dir" -name "*.1" -o -name "*.gz" -o -name "*.old" 2>/dev/null)
+                done < <(find "$log_dir" -type f \( -name "*.1" -o -name "*.gz" -o -name "*.old" \) -mtime +30 2>/dev/null)
                 send_telegram "📄 *Apache logs cleanup* on *${EXEC_HOSTNAME}*. Check logs for details."
             fi
         fi
