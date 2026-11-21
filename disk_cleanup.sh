@@ -34,6 +34,11 @@ CLEAN_CONTAINERD_SNAPSHOTS=false
 CLEAN_APACHE_LOGS=false
 CLEAN_NANO=false
 
+# Docker prune options (true/false) — control what docker system prune removes
+PRUNE_IMAGES=true
+PRUNE_VOLUMES=true
+PRUNE_NETWORKS=false
+
 # Space thresholds (in GB - cleanup only if free space below this)
 MIN_FREE_GB=5
 
@@ -90,7 +95,7 @@ for config_file in "${CONFIG_FILES[@]}"; do
             [[ "$value" == *$'\\n'* || "$value" == *$'\\r'* ]] && continue
             # Only set known variables
             case "$key" in
-                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|JOURNAL_VACUUM_SIZE)
+                TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|TELEGRAM_ENABLED|CLEAN_APT_CACHE|CLEAN_JOURNAL|CLEAN_DOCKER_PRUNE|CLEAN_CONTAINERD_SNAPSHOTS|CLEAN_APACHE_LOGS|CLEAN_NANO|MIN_FREE_GB|FORCE_MODE|DRY_RUN|LOG_TO_FILE|LOG_FILE|JOURNAL_VACUUM_SIZE|PRUNE_IMAGES|PRUNE_VOLUMES|PRUNE_NETWORKS)
                     export "${key}"="${value}"
                     ;;
                 WHITELISTED_PATHS)
@@ -447,16 +452,32 @@ cleanup_docker_prune() {
 
     log_message "INFO" "Initiating Docker system prune..."
 
+    # Build prune flags from per-resource config options.
+    # Default to --all (matches prior behavior) when all three are true;
+    # otherwise pass explicit flags so users control what gets removed.
+    local prune_flags=()
+    if [[ "${PRUNE_IMAGES}" == "true" ]]; then prune_flags+=(--all); fi
+    if [[ "${PRUNE_VOLUMES}" == "true" ]]; then prune_flags+=(--volumes); fi
+    if [[ "${PRUNE_NETWORKS}" == "true" ]]; then prune_flags+=(--networks); fi
+    # Fallback: if nothing selected, default to --all for backward compatibility
+    if [[ ${#prune_flags[@]} -eq 0 ]]; then
+        prune_flags=(--all)
+        log_message "WARN" "No PRUNE_* options enabled, defaulting to --all"
+    fi
+
+    local prune_desc
+    prune_desc=$(IFS=,; echo "${prune_flags[*]}")
+
     if $DRY_RUN; then
-        log_message "INFO" "[DRY RUN] Would run: docker system prune --all"
-        send_telegram "🔍 *DRY RUN*: Would prune Docker system (images, volumes, networks) on *${EXEC_HOSTNAME}*"
+        log_message "INFO" "[DRY RUN] Would run: docker system prune ${prune_desc}"
+        send_telegram "🔍 *DRY RUN*: Would prune Docker system (${prune_desc}) on *${EXEC_HOSTNAME}*"
         return 0
     fi
 
     # For safety, require confirmation unless FORCE_MODE=true
     if [[ "${FORCE_MODE}" != "true" ]]; then
         local confirm_msg
-        confirm_msg="$(escape_markdown_v2 "Docker prune confirmation needed on ${EXEC_HOSTNAME}. Proceed with docker system prune --all? (y/N)")"
+        confirm_msg="$(escape_markdown_v2 "Docker prune confirmation needed on ${EXEC_HOSTNAME}. Proceed with docker system prune ${prune_desc}? (y/N)")"
         log_message "INFO" "Docker prune confirmation required (use FORCE_MODE=true to skip)"
 
         # Read from tty for confirmation - non-interactive fallback
@@ -466,7 +487,7 @@ cleanup_docker_prune() {
         fi
 
         if [[ "$response" =~ ^[Yy]$ ]]; then
-            if docker system prune --all 2>&1; then
+            if docker system prune "${prune_flags[@]}" 2>&1; then
                 local docker_ok
                 docker_ok="$(escape_markdown_v2 "✅ *Docker prune completed* successfully on *${EXEC_HOSTNAME}*")"
                 log_message "INFO" "Docker prune completed"
@@ -489,7 +510,7 @@ cleanup_docker_prune() {
         fi
     else
         # Forced mode
-        if docker system prune --all 2>&1; then
+        if docker system prune "${prune_flags[@]}" 2>&1; then
             local docker_forced_ok
             docker_forced_ok="$(escape_markdown_v2 "✅ *Forced Docker prune completed* on *${EXEC_HOSTNAME}*")"
             log_message "INFO" "Forced Docker prune completed"
