@@ -51,12 +51,16 @@ chmod +x "$INSTALL_SCRIPT"
 CONFIG_FILE="$CONFIG_DIR/disk_cleanup.conf"
 if [[ ! -f "$CONFIG_FILE" ]]; then
     if curl -sfL "https://raw.githubusercontent.com/spupuz/debian-disk-cleanup/main/disk_cleanup_config.cfg" -o "$CONFIG_FILE" 2>/dev/null; then
+        # Restrict permissions: config may hold Telegram bot token (secret)
+        chmod 600 "$CONFIG_FILE"
         echo "Created default config at $CONFIG_FILE"
         echo "Please edit $CONFIG_FILE to set your Telegram credentials and preferences"
     else
         echo "WARNING: Failed to download default config to $CONFIG_FILE"
     fi
 else
+    # Enforce restrictive permissions on existing config too
+    chmod 600 "$CONFIG_FILE"
     echo "Config already exists at $CONFIG_FILE, skipping"
 fi
 
