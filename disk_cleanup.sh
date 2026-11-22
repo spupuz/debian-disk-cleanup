@@ -43,11 +43,12 @@ JOURNAL_VACUUM_SIZE=100
 # Which paths to check for orphaned data (only safe, verified paths)
 WHITELISTED_PATHS=()
 
-# Force mode (skip interactive confirmation)
-FORCE_MODE=false
-
+# Configuration (env vars can be overridden via flags or environment)
+FORCE_MODE="${FORCE_MODE:-false}"
 # Dry run mode (show what would be done without doing it)
-DRY_RUN=false
+DRY_RUN="${DRY_RUN:-false}"
+# Auto-update toggle (use --no-update to disable)
+AUTO_UPDATE="${AUTO_UPDATE:-true}"
 
 
 # Logging
@@ -318,19 +319,29 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        --force)
+            FORCE_MODE=true
+            shift
+            ;;
+        --no-update)
+            AUTO_UPDATE=false
+            shift
+            ;;
         --help|-h)
             cat <<'EOF'
-Usage: disk_cleanup.sh [--help] [--version] [--dry-run]
+Usage: disk_cleanup.sh [--help] [--version] [--dry-run] [--force] [--no-update]
 
 Options:
   --help, -h       Show this help message and exit
   --version, -v    Print the script version and exit
   --dry-run        Preview actions without performing them
+  --force          Skip interactive confirmations (e.g. Docker prune)
+  --no-update      Skip the automatic GitHub self-update check
 
 Environment:
   DRY_RUN=true     Same as --dry-run
-  FORCE_MODE=true  Skip interactive Docker prune confirmation
-  AUTO_UPDATE=false  Disable GitHub self-update check
+  FORCE_MODE=true  Same as --force
+  AUTO_UPDATE=false  Same as --no-update
 
 Configuration:
   /etc/default/disk_cleanup.conf or ~/.disk_cleanup.conf
