@@ -862,10 +862,12 @@ for op in "${operations[@]}"; do
     ops_summary+="${escaped_op}"$'\n'
 done
 
-# Get final disk space
-final_avail=$(df -B1 / | tail -1 | awk '{print $4}')
+# Get final disk space (single df call)
+final_df_output=$(df -B1 / | tail -1)
+final_avail=$(echo "$final_df_output" | awk '{print $4}')
+final_size=$(echo "$final_df_output" | awk '{print $2}')
 final_avail_gb=$((final_avail / 1024 / 1024 / 1024))
-total_size_gb=$(( $(df -B1 / | tail -1 | awk '{print $2}') / 1024 / 1024 / 1024))
+total_size_gb=$((final_size / 1024 / 1024 / 1024))
 
 # Build final summary message with Markdown formatting
 summary_msg="$(escape_markdown_v2 "==========================================")"
