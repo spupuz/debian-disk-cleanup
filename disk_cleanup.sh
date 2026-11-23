@@ -172,10 +172,13 @@ send_telegram() {
     escaped_message=$(escape_markdown_v2 "$message")
 
     local url="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
-    # Build payload
-    local payload="chat_id=${TELEGRAM_CHAT_ID}&parse_mode=MarkdownV2&text=${escaped_message}"
-
-    if curl -s --max-time 15 -X POST "$url" -d "$payload" > /dev/null 2>&1; then
+    # Use --data-urlencode so chat_id and text are properly URL-encoded.
+    # Without this, &, =, +, #, or non-ASCII characters in the message
+    # corrupt the request body and break delivery.
+    if curl -s --max-time 15 -X POST "$url" \
+        --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+        --data-urlencode "parse_mode=MarkdownV2" \
+        --data-urlencode "text=${escaped_message}" > /dev/null 2>&1; then
         log_message "INFO" "Telegram message sent successfully"
     else
         log_message "WARN" "Failed to send Telegram message"
@@ -597,7 +600,7 @@ cleanup_containerd_snapshots_super_safe() {
             if [[ -n "$running_docker_containers" ]]; then
                 # Batched: docker inspect accepts multiple container IDs in one call
                 local docker_snapshots
-                docker_snapshots=$(docker inspect --format='{{.GraphDriver.Data.MergedDir}}' $running_docker_containers 2>/dev/null | grep -oE '[a-f0-9]{64}' || echo "")
+                docker_snapshots=$(docker inspect --format='{{.GraphDriver.Data.MergedDir}}' "$running_docker_containers" 2>/dev/null | grep -oE '[a-f0-9]{64}' || echo "")
                 while IFS= read -r docker_snapshot; do
                     [[ -z "$docker_snapshot" ]] && continue
                     used_snapshot_map["$docker_snapshot"]=1
