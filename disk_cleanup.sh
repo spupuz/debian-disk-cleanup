@@ -129,10 +129,11 @@ fi
 # Escape Markdown V2 special characters
 escape_markdown_v2() {
     local text="$1"
-    # Proper Markdown V2 escaping using sed
-    local special_chars='_*[()~#+\-=|{}!\\>'
     local escaped
-    escaped=$(printf '%s' "$text" | sed 's/[][\(\)~#+=|{}\!\\>-]/\\&/g')
+    # Escape all Telegram Markdown V2 special characters, including underscore.
+    # Underscore is required: unescaped _ renders as italic/bold markup and
+    # breaks messages containing file names, paths, or config keys.
+    escaped=$(printf '%s' "$text" | sed 's/[][\\(\\)~#+=|{}\\!\\>-_]/\\&/g')
     printf '%s' "$escaped"
 }
 
