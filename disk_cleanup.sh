@@ -722,40 +722,40 @@ cleanup_orphaned_data() {
 
         # Find large files/directories not accessed in over 30 days
         # Only clean if explicitly safe - this is a placeholder for verified paths
+        # ⚡ Bolt: single find pass. The previous code spawned one `find` per file
+        # (N+1 subprocess forks) purely to re-check the age that the initial
+        # `find -atime +30` had already guaranteed.
         local large_files
         large_files=$(find "$path" -type f -atime +30 -size +100M 2>/dev/null | head -20)
 
         if [[ -n "$large_files" ]]; then
             log_message "INFO" "Found potentially orphanable files in $path"
             while read -r file; do
-                local days_since_access
-                days_since_access=$(find "$file" -atime +30 2>/dev/null | wc -l || echo "0")
-                if [[ $days_since_access -gt 0 ]]; then
-                    # Double-check: verify this is likely orphaned data, not application data
-                    local file_name
-                    file_name=$(basename "$file")
-                    # Skip common application extensions
-                    case "$file_name" in
-                        *.log|*.tmp|*.cache|*.bak|*.old|*.swp|*.pyc|*.class)
-                        # Skip symlinks to avoid path traversal / symlink attacks
-                        if [[ -L "$file" ]]; then
-                            log_message "INFO" "Skipping symlink (unsafe): $file"
-                            continue
-                        fi
-                        # Only remove regular files, never directories
-                        if [[ ! -f "$file" ]]; then
-                            log_message "INFO" "Skipping non-regular file: $file"
-                            continue
-                        fi
-                        rm -f "$file" 2>/dev/null || true
-                            log_message "INFO" "Removed orphaned file: $file"
-                            operations+=("Removed orphaned file: $file")
-                            ;;
-                        *)
-                            log_message "INFO" "Skipping file (possible application data): $file"
-                            ;;
-                    esac
-                fi
+                [[ -z "$file" ]] && continue
+                # Double-check: verify this is likely orphaned data, not application data
+                local file_name
+                file_name=$(basename "$file")
+                # Skip common application extensions
+                case "$file_name" in
+                    *.log|*.tmp|*.cache|*.bak|*.old|*.swp|*.pyc|*.class)
+                    # Skip symlinks to avoid path traversal / symlink attacks
+                    if [[ -L "$file" ]]; then
+                        log_message "INFO" "Skipping symlink (unsafe): $file"
+                        continue
+                    fi
+                    # Only remove regular files, never directories
+                    if [[ ! -f "$file" ]]; then
+                        log_message "INFO" "Skipping non-regular file: $file"
+                        continue
+                    fi
+                    rm -f "$file" 2>/dev/null || true
+                        log_message "INFO" "Removed orphaned file: $file"
+                        operations+=("Removed orphaned file: $file")
+                        ;;
+                    *)
+                        log_message "INFO" "Skipping file (possible application data): $file"
+                        ;;
+                esac
             done <<< "$large_files"
         fi
     done
