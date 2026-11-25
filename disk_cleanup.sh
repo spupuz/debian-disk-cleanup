@@ -318,19 +318,29 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        --force)
+            FORCE_MODE=true
+            shift
+            ;;
+        --no-update)
+            AUTO_UPDATE=false
+            shift
+            ;;
         --help|-h)
             cat <<'EOF'
-Usage: disk_cleanup.sh [--help] [--version] [--dry-run]
+Usage: disk_cleanup.sh [--help] [--version] [--dry-run] [--force] [--no-update]
 
 Options:
   --help, -h       Show this help message and exit
   --version, -v    Print the script version and exit
   --dry-run        Preview actions without performing them
+  --force          Skip interactive confirmations (same as FORCE_MODE=true)
+  --no-update      Skip the GitHub self-update check (same as AUTO_UPDATE=false)
 
 Environment:
   DRY_RUN=true     Same as --dry-run
-  FORCE_MODE=true  Skip interactive Docker prune confirmation
-  AUTO_UPDATE=false  Disable GitHub self-update check
+  FORCE_MODE=true  Same as --force (skip interactive Docker prune confirmation)
+  AUTO_UPDATE=false  Same as --no-update (disable GitHub self-update check)
 
 Configuration:
   /etc/default/disk_cleanup.conf or ~/.disk_cleanup.conf
